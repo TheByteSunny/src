@@ -356,6 +356,38 @@ static int filesystem_Find(lua_State *L) {
     return 1;
 }
 
+// YourLocalSunny: will find only dirs/folders
+static int filesystem_FindDirs(lua_State *L) {
+    const char *pattern = luaL_checkstring(L, 1);
+    const char *pathID  = luaL_optstring(L, 2, "MOD");
+
+    CUtlVector<CUtlString> found;
+
+	// YourLocalSunny: same as Find
+    FileFindHandle_t handle;
+    const char *file = filesystem->FindFirstEx(pattern, pathID, &handle);
+
+    if (file != NULL) {
+        do {
+            // YourLocalSunny: filter it
+            if (filesystem->IsDirectory(file, pathID)) {
+                found.AddToTail(file);
+            }
+        } while ((file = filesystem->FindNext(handle)) != NULL);
+
+        filesystem->FindClose(handle);
+    }
+
+    lua_newtable(L);
+
+    for (int i = 0; i < found.Count(); ++i) {
+        lua_pushstring(L, found[i].String());
+        lua_rawseti(L, -2, i + 1);
+    }
+
+    return 1;
+}
+
 static const luaL_Reg filesystemlib[] = {
   {"AddPackFile",   filesystem_AddPackFile},
   {"AddSearchPath",   filesystem_AddSearchPath},
@@ -402,6 +434,7 @@ static const luaL_Reg filesystemlib[] = {
   {"WaitForResources",   filesystem_WaitForResources},
   {"Write",   filesystem_Write},
   {"Find", filesystem_Find},
+  {"FindDirs", filesystem_FindDirs},
   {NULL, NULL}
 };
 
