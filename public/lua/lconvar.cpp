@@ -1,4 +1,4 @@
-//===== Copyright © 1996-2005, Valve Corporation, All rights reserved. ======//
+//===== Copyright Â© 1996-2005, Valve Corporation, All rights reserved. ======//
 //
 // Purpose: 
 //
@@ -131,6 +131,70 @@ static int ConVar___tostring (lua_State *L)
   return 1;
 }
 
+// YourLocalSunny: Get all info
+static int ConVar_GetInfo(lua_State *L)
+{
+    const ConVar *cvar = luaL_checkconvar(L, 1);
+
+    lua_newtable(L);
+
+    lua_pushstring(L, "name");
+    lua_pushstring(L, cvar->GetName());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "string");
+    lua_pushstring(L, cvar->GetString());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "int");
+    lua_pushinteger(L, cvar->GetInt());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "float");
+    lua_pushnumber(L, cvar->GetFloat());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "bool");
+    lua_pushboolean(L, cvar->GetBool());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "default");
+    lua_pushstring(L, cvar->GetDefault());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "help");
+    lua_pushstring(L, cvar->GetHelpText());
+    lua_settable(L, -3);
+
+    float minVal;
+    if (cvar->GetMin(minVal)) {
+        lua_pushstring(L, "min");
+        lua_pushnumber(L, minVal);
+        lua_settable(L, -3);
+    }
+
+    float maxVal;
+    if (cvar->GetMax(maxVal)) {
+        lua_pushstring(L, "max");
+        lua_pushnumber(L, maxVal);
+        lua_settable(L, -3);
+    }
+
+    lua_pushstring(L, "flags");
+    lua_pushinteger(L, cvar->GetFlags());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "registered");
+    lua_pushboolean(L, cvar->IsRegistered());
+    lua_settable(L, -3);
+
+    lua_pushstring(L, "isCommand");
+    lua_pushboolean(L, cvar->IsCommand());
+    lua_settable(L, -3);
+
+    return 1;
+}
+
 
 static const luaL_Reg ConVarmeta[] = {
   {"AddFlags", ConVar_AddFlags},
@@ -148,6 +212,7 @@ static const luaL_Reg ConVarmeta[] = {
   {"IsRegistered", ConVar_IsRegistered},
   {"Revert", ConVar_Revert},
   {"__tostring", ConVar___tostring},
+  {"GetInfo", ConVar_GetInfo}, // YourLocalSunny: Will it work?
   {NULL, NULL}
 };
 
