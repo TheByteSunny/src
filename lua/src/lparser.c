@@ -777,7 +777,7 @@ static void simpleexp (LexState *ls, expdesc *v) {
 
 static UnOpr getunopr (int op) {
   switch (op) {
-    case TK_NOT: return OPR_NOT;
+    case TK_NOT: return OPR_NOT;  // NEEEW peak peaky C++-like syntax
     case '-': return OPR_MINUS;
     case '#': return OPR_LEN;
     default: return OPR_NOUNOPR;
@@ -800,8 +800,8 @@ static BinOpr getbinopr (int op) {
     case TK_LE: return OPR_LE;
     case '>': return OPR_GT;
     case TK_GE: return OPR_GE;
-    case TK_AND: return OPR_AND;
-    case TK_OR: return OPR_OR;
+    case TK_AND: return OPR_AND;  // new
+    case TK_OR:  return OPR_OR;   // new too
     default: return OPR_NOBINOPR;
   }
 }
