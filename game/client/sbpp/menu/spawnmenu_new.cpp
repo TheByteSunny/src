@@ -2387,3 +2387,144 @@ LUALIB_API int luaopen_sm( lua_State *L )
 	return 1;
 }
 #endif
+
+// there it is
+#ifdef LUA_SDK
+
+class CSMLToolMenu : public vgui::Frame
+{
+public:
+    CSMLToolMenu() : BaseClass(nullptr, "SMLToolMenu")
+    {
+        SetTitle("TOOL MENU", true);
+        SetSize(400, 500);
+        SetMoveable(true);
+        SetSizeable(false);
+        SetDeleteSelfOnClose(false);
+
+        Center();
+
+        m_pContent = new vgui::Panel(this, "Content");
+        m_pContent->Dock(FILL);
+
+        m_bPopulated = false;
+    }
+
+    void AddButton(const char* text, const char* command)
+    {
+        vgui::Button* btn = new vgui::Button(m_pContent, text, text);
+        btn->SetTall(28);
+        btn->Dock(TOP);
+        btn->SetCommand(command);
+        btn->AddActionSignalTarget(this);
+
+        m_Buttons.AddToTail(btn);
+    }
+
+    void OnCommand(const char* cmd) override
+    {
+        engine->ClientCmd((char*)cmd);
+    }
+
+    void Clear()
+    {
+        for (int i = 0; i < m_Buttons.Count(); i++)
+        {
+            if (m_Buttons[i])
+                m_Buttons[i]->MarkForDeletion();
+        }
+        m_Buttons.RemoveAll();
+        m_bPopulated = false;
+    }
+
+    void Populate(lua_State* L)
+    {
+        if (m_bPopulated)
+            return;
+
+        m_bPopulated = true;
+
+        lua_getglobal(L, "hook");
+        lua_getfield(L, -1, "Run");
+
+        lua_pushstring(L, "PopulateToolmenu");
+
+        if (lua_pcall(L, 1, 0, 0) != 0)
+        {
+            Warning("PopulateToolmenu error: %s\n", lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
+    }
+
+    bool IsPopulated() const { return m_bPopulated; }
+
+private:
+    vgui::Panel* m_pContent;
+    CUtlVector<vgui::Button*> m_Buttons;
+    bool m_bPopulated;
+};
+
+static CSMLToolMenu* g_ToolMenu = nullptr;
+
+void OpenToolMenu(lua_State* L)
+{
+    if (!g_ToolMenu)
+    {
+        g_ToolMenu = new CSMLToolMenu();
+    }
+
+    g_ToolMenu->SetVisible(true);
+    g_ToolMenu->MoveToFront();
+    g_ToolMenu->RequestFocus();
+
+    g_ToolMenu->Populate(L);
+}
+
+static int tm_CreateButton(lua_State* L)
+{
+    const char* text = luaL_checkstring(L, 1);
+    const char* command = luaL_checkstring(L, 2);
+
+    if (!g_ToolMenu)
+    {
+        lua_pushboolean(L, 0);
+        return 1;
+    }
+
+    g_ToolMenu->AddButton(text, command);
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+static int tm_Clear(lua_State* L)
+{
+    if (g_ToolMenu)
+        g_ToolMenu->Clear();
+
+    lua_pushboolean(L, 1);
+    return 1;
+}
+
+// a little useless 
+static int tm_Open(lua_State* L)
+{
+    OpenToolMenu(L);
+    return 0;
+}
+
+// register 
+static const luaL_Reg toolmenu_lib[] = {
+    { "CreateButton", tm_CreateButton },
+    { "Clear", tm_Clear },
+    { "Open", tm_Open },
+    { NULL, NULL }
+};
+
+LUALIB_API int luaopen_toolmenu(lua_State* L)
+{
+    luaL_register(L, "toolmenu_Private", toolmenu_lib);
+    return 1;
+}
+
+#endif
