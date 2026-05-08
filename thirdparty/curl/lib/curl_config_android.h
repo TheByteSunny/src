@@ -89,6 +89,7 @@
 #define HAVE_OPENSSL_X509_H 1
 #define HAVE_OPENSSL_RAND_H 1
 #define HAVE_OPENSSL_PKCS12_H 1
+#define OPENSSL_NO_ENGINE 1
 
 #define RECV_TYPE_RETV ssize_t
 #define RECV_TYPE_ARG1 int
