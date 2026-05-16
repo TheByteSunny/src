@@ -7,7 +7,9 @@
 #include "bugreporter_ui.h"
 #include "webmanager.h"
 #include "sbpp_globaldef.h"
+#include "id.h"
 
+#include <cstdio>
 #include <vgui/IScheme.h>
 #include <vgui/ISurface.h>
 #include <vgui/IInput.h>
@@ -165,10 +167,6 @@ CBugReportPanel::CBugReportPanel( Panel *parent ) : BaseClass( parent, "BugRepor
 	m_pAddonId = new TextEntry( this, "AddonId" );
 	m_pAddonId->SetMaximumCharCount( kAddonIdMax );
 
-	m_pLblVersion = new Label( this, "LblVersion", "#SBPP_BugReport_Version" );
-	m_pVersion = new TextEntry( this, "Version" );
-	m_pVersion->SetMaximumCharCount( kVersionMax );
-
 	m_pLblDescription = new Label( this, "LblDescription", "#SBPP_BugReport_Description" );
 	m_pDescription = new TextEntry( this, "Description" );
 	m_pDescription->SetMultiline( true );
@@ -247,7 +245,6 @@ void CBugReportPanel::ClearForm()
 	m_pName->SetText( "" );
 	m_pTitle->SetText( "" );
 	m_pAddonId->SetText( "" );
-	m_pVersion->SetText( "" );
 	m_pDescription->SetText( "" );
 }
 
@@ -278,13 +275,12 @@ void CBugReportPanel::SubmitReport()
 	if ( m_bSubmitting )
 		return;
 
-	char name[128], title[256], addon[64], version[64];
+	char name[128], title[256], addon[64];
 	char description[kDescMax + 16];
 
 	GetEntryText( m_pName, name, sizeof( name ) );
 	GetEntryText( m_pTitle, title, sizeof( title ) );
 	GetEntryText( m_pAddonId, addon, sizeof( addon ) );
-	GetEntryText( m_pVersion, version, sizeof( version ) );
 	GetEntryText( m_pDescription, description, sizeof( description ) );
 
 	int nameLen = Q_strlen( name );
@@ -314,14 +310,22 @@ void CBugReportPanel::SubmitReport()
 	if ( !g_pWebManager )
 		return;
 
-	char eName[256], eTitle[512], eAddon[128], eVersion[128];
+	char eName[256], eTitle[512], eAddon[128];
 	char eDesc[kDescMax * 2 + 16];
 
 	JsonEscape( name, eName, sizeof( eName ) );
 	JsonEscape( title, eTitle, sizeof( eTitle ) );
 	JsonEscape( addon, eAddon, sizeof( eAddon ) );
-	JsonEscape( version, eVersion, sizeof( eVersion ) );
 	JsonEscape( description, eDesc, sizeof( eDesc ) );
+
+	char reporter[256];
+	const char* userID = CUserID::Get().GetID();
+
+	Q_snprintf(reporter, sizeof(reporter),
+		"%s (%s)",
+		eName,
+		userID ? userID : "unknown"
+	);
 
 	char body[kDescMax * 2 + 1024];
 	Q_snprintf( body, sizeof( body ),
@@ -332,7 +336,7 @@ void CBugReportPanel::SubmitReport()
 		"\"addon_id\":\"%s\","
 		"\"version\":\"%s\""
 		"}",
-		eName, eTitle, eDesc, eAddon, eVersion );
+		reporter, eTitle, eDesc, eAddon, SBPP_VERSION );
 
 	m_bSubmitting = true;
 	m_pSubmit->SetEnabled( false );

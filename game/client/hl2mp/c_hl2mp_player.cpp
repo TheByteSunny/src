@@ -77,6 +77,8 @@ IMPLEMENT_CLIENTCLASS_DT(C_HL2MP_Player, DT_HL2MP_Player, CHL2MP_Player)
 
 	RecvPropBool( RECVINFO( m_bIsChatting ) ),
 	RecvPropBool( RECVINFO( m_bIsNoclipping ) ),
+
+	RecvPropString( RECVINFO( m_szUserID ) ),
 #endif
 END_RECV_TABLE()
 
@@ -131,6 +133,8 @@ C_HL2MP_Player::C_HL2MP_Player() : m_PlayerAnimState( this ), m_iv_angEyeAngles(
 
 	m_bIsChatting = false;
 	m_bIsNoclipping = false;
+
+	Q_strncpy( m_szUserID.GetForModify(), "unknown", sizeof( m_szUserID ) ); 
 #endif
 
 	m_pFlashlightBeam = NULL;

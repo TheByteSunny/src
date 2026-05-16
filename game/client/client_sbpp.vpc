@@ -84,6 +84,8 @@ $Project "Client (SBPP)"
 			$File	"sbpp\hud_watermark.cpp"
 			$File	"sbpp\hud_watermark.h"
 			$File	"sbpp\c_vehicle_chair.cpp"
+			$File	"sbpp\id.cpp"
+
 			$File	"$SRCDIR\game\shared\sbpp\handviewmodel_shared.cpp"
 			$File	"$SRCDIR\game\shared\Multiplayer\multiplayer_animstate.cpp"
 			$File	"$SRCDIR\game\shared\Multiplayer\multiplayer_animstate.h"

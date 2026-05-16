@@ -5,6 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
+#include "dt_send.h"
 #include "weapon_hl2mpbasehlmpcombatweapon.h"
 #include "hl2mp_player.h"
 #include "globalstate.h"
@@ -152,6 +153,8 @@ IMPLEMENT_SERVERCLASS_ST(CHL2MP_Player, DT_HL2MP_Player)
 
 	SendPropBool( SENDINFO( m_bIsChatting ) ),
 	SendPropBool( SENDINFO( m_bIsNoclipping ) ),
+
+	SendPropString( SENDINFO( m_szUserID ) ),
 #endif
 END_SEND_TABLE()
 
@@ -269,6 +272,8 @@ CHL2MP_Player::CHL2MP_Player() : m_PlayerAnimState( this )
 	m_bIsNoclipping = false;
 
 	m_CurrentHandModel = "";
+
+	Q_strncpy( m_szUserID.GetForModify(), "unknown", sizeof( m_szUserID ) ); 
 
 	BaseClass::ChangeTeam( 0 );
 	UseClientSideAnimation();

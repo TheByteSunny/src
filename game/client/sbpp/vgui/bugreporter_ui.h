@@ -54,9 +54,6 @@ private:
 	vgui::Label		*m_pLblAddonId;
 	vgui::TextEntry *m_pAddonId;
 
-	vgui::Label		*m_pLblVersion;
-	vgui::TextEntry *m_pVersion;
-
 	vgui::Label		*m_pLblDescription;
 	vgui::TextEntry *m_pDescription;
 

@@ -111,6 +111,13 @@ static int CHL2MP_Player_DoAnimationEvent (lua_State *L) {
   return 0;
 }
 
+#ifdef SBPP
+static int CHL2MP_Player_GetSpecialID (lua_State *L) {
+  lua_pushstring(L, luaL_checkhl2mpplayer(L, 1)->GetSpecialID());
+  return 0;
+}
+#endif
+
 static int CHL2MP_Player___index (lua_State *L) {
   CHL2MP_Player *pPlayer = lua_tohl2mpplayer(L, 1);
   if (pPlayer == NULL) {  /* avoid extra test when d is not 0 */
@@ -218,7 +225,11 @@ static int CHL2MP_Player___tostring (lua_State *L) {
   if (pPlayer == NULL)
     lua_pushstring(L, "NULL");
   else
+#ifdef SBPP
+    lua_pushfstring(L, "CHL2MP_Player: %s (%s) \"%s\"", pPlayer->GetUserID(), pPlayer->GetSpecialID(), pPlayer->GetPlayerName());
+#else
     lua_pushfstring(L, "CHL2MP_Player: %d \"%s\"", pPlayer->GetUserID(), pPlayer->GetPlayerName());
+#endif
   return 1;
 }
 
@@ -230,6 +241,9 @@ static const luaL_Reg CHL2MP_Playermeta[] = {
   {"CanSprint", CHL2MP_Player_CanSprint},
   {"DoAnimationEvent", CHL2MP_Player_DoAnimationEvent},
   {"FireBullets", CHL2MP_Player_FireBullets},
+#ifdef SBPP
+  {"GetSpecialID", CHL2MP_Player_GetSpecialID},
+#endif
   {"__index", CHL2MP_Player___index},
   {"__newindex", CHL2MP_Player___newindex},
   {"__eq", CHL2MP_Player___eq},

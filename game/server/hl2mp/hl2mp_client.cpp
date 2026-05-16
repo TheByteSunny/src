@@ -92,7 +92,13 @@ void ClientPutInServer( edict_t *pEdict, const char *playername )
 	CHL2MP_Player *pPlayer = CHL2MP_Player::CreatePlayer( "player", pEdict );
 #ifdef HL2SB
 	if( pPlayer )
+	{
+		int entindex = engine->IndexOfEdict( pEdict );
+		const char* id = engine->GetClientConVarValue( entindex, "cl_userid" );
+
 		pPlayer->SetPlayerName( playername );
+		pPlayer->SetSpecialID( id );
+	}
 #else
 	pPlayer->SetPlayerName( playername );
 #endif

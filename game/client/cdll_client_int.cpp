@@ -184,6 +184,7 @@ extern vgui::IInputInternal *g_InputInternal;
 #include "sbpp/gameui/loading.h"
 #include "sbpp/mount.h"
 #include "sbpp/webmanager.h"
+#include "sbpp/id.h"
 
 #ifdef _WIN32
 #undef MessageBox
@@ -1273,14 +1274,23 @@ void CHLClient::PostInit()
 	if ( gameInfo->LoadFromFile( filesystem, "gameinfo.txt", "MOD" ) )
 		theTitle = gameInfo->GetString( "game", "Unknown" );
 
+	Msg(
+		"==========\n"
+		"Half-Life 2: Sandbox++\n"
+		"Created by Team HL2SB++\n\n"
+		"User ID: %s\n"
+		"==========\n",
+
+		CUserID::Get().GetID()
+	);
+
 	if ( Q_strcmp( theTitle, baseTitle ) != 0 )
 	{
         Error(
            	"Hey. Stealing is bad.\n"
-            "Do you even know how much WE, the HL2SB++ development team have worked on the mod?\n"
-            "And here you are, just, copying it for your own creation (in a bad way).\n"
-            "We have suffered, cried, but we did it. Just, don't steal. Please.\n\n"
-            "Yours sincerely, the HL2SB++ developer team. https://discord.gg/3DkET6fqXr\n"
+            "If you're a normal user getting this error, check how you installed your addons or where you got HL2:SB++ from.\n"
+            "If you intentionally removed the credits to claim ownership, just know that I have my eyes upon you and this will NOT go unnoticed.\n\n"
+            "Yours sincerely, Team HL2SB++. https://discord.gg/3DkET6fqXr\n"
         );
 	}
 	// protect end

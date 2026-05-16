@@ -119,6 +119,9 @@ public:
 	/* And whatever this monstrosity is */
 	virtual void SetChatting(bool bValue) { m_bIsChatting = bValue; }
 	virtual void SetNoclipping(bool bValue) { m_bIsNoclipping = bValue; }
+
+	const char *GetSpecialID() const { return m_szUserID; }
+	void SetSpecialID( const char *id ) { Q_strncpy( m_szUserID.GetForModify(), id, sizeof( m_szUserID ) ); }
 #endif
 
 private:
@@ -148,6 +151,8 @@ private:
 
 	CNetworkVar( bool, m_bIsChatting );
 	CNetworkVar( bool, m_bIsNoclipping );
+
+	CNetworkString( m_szUserID, 33 );
 #endif
 	int	m_headYawPoseParam;
 	int	m_headPitchPoseParam;

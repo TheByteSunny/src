@@ -188,6 +188,9 @@ public:
 	virtual void SetChatting(bool bValue) { m_bIsChatting = bValue; }
 	virtual void SetNoclipping(bool bValue) { m_bIsNoclipping = bValue; }
 
+	const char *GetSpecialID() const { return m_szUserID; }
+	void SetSpecialID( const char *id ) { Q_strncpy( m_szUserID.GetForModify(), id, sizeof( m_szUserID ) ); }
+
 	virtual void UpdatePlayerColors();
 
 public:
@@ -220,6 +223,8 @@ private:
 
 	CNetworkVar( bool, m_bIsChatting );
 	CNetworkVar( bool, m_bIsNoclipping );
+
+	CNetworkString( m_szUserID, 33 );
 
 	float   m_flTauntEndTime;
 	int     m_iTauntSeq;
