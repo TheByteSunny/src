@@ -20,6 +20,7 @@
 #include "ienginevgui.h"
 #include <vgui/IVGui.h>
 
+// memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
 using namespace vgui;
@@ -88,6 +89,56 @@ static void JsonEscape( const char *src, char *dst, int dstSize )
 		}
 	}
 	dst[j] = 0;
+}
+
+static bool JsonExtractString( const char *json, const char *key, char *out, int outSize )
+{
+	if ( !json || !key || !out || outSize <= 0 )
+		return false;
+
+	out[0] = 0;
+
+	char needle[64];
+	Q_snprintf( needle, sizeof( needle ), "\"%s\"", key );
+
+	const char *p = Q_stristr( json, needle );
+	if ( !p )
+		return false;
+
+	p += Q_strlen( needle );
+	while ( *p && ( *p == ' ' || *p == '\t' || *p == ':' ) )
+		p++;
+	if ( *p != '\"' )
+		return false;
+	p++;
+
+	int j = 0;
+	while ( *p && *p != '\"' && j < outSize - 1 )
+	{
+		if ( *p == '\\' && p[1] )
+		{
+			char esc = p[1];
+			if ( esc == 'n' )
+				out[j++] = '\n';
+			else if ( esc == 't' )
+				out[j++] = '\t';
+			else if ( esc == 'r' )
+				out[j++] = '\r';
+			else if ( esc == '\"' )
+				out[j++] = '\"';
+			else if ( esc == '\\' )
+				out[j++] = '\\';
+			else
+				out[j++] = esc;
+			p += 2;
+		}
+		else
+		{
+			out[j++] = *p++;
+		}
+	}
+	out[j] = 0;
+	return true;
 }
 
 CBugReportPanel::CBugReportPanel( Panel *parent ) : BaseClass( parent, "BugReportPanel" )
@@ -169,6 +220,26 @@ void CBugReportPanel::OnCommand( const char *command )
 		return;
 	}
 	BaseClass::OnCommand( command );
+}
+
+void CBugReportPanel::OnSubmitDoneInfo( const char *text )
+{
+	m_bSubmitting = false;
+	m_pSubmit->SetEnabled( true );
+	m_pCancel->SetEnabled( true );
+
+	ShowInfo( "#SBPP_BugReport_OkTitle", text );
+	ClearForm();
+	SetVisible( false );
+}
+
+void CBugReportPanel::OnSubmitDoneError( const char *text )
+{
+	m_bSubmitting = false;
+	m_pSubmit->SetEnabled( true );
+	m_pCancel->SetEnabled( true );
+
+	ShowError( "#SBPP_BugReport_ErrTitle", text );
 }
 
 void CBugReportPanel::ClearForm()
@@ -267,22 +338,56 @@ void CBugReportPanel::SubmitReport()
 	m_pSubmit->SetEnabled( false );
 	m_pCancel->SetEnabled( false );
 
-	bool ok = g_pWebManager->Post( kBugReportUrl, body, []( const WebResult_t &r ) { (void)r; } );
+	VPANEL hSelf = GetVPanel();
 
-	m_bSubmitting = false;
-	m_pSubmit->SetEnabled( true );
-	m_pCancel->SetEnabled( true );
+	g_pWebManager->Post( kBugReportUrl, body,
+		[hSelf]( const WebResult_t &r )
+		{
+			char msg[512];
 
-	if ( ok )
-	{
-		ShowInfo( "#SBPP_BugReport_OkTitle", "Bug report sent! Thank you." );
-		ClearForm();
-		SetVisible( false );
-	}
-	else
-	{
-		ShowError( "#SBPP_BugReport_ErrTitle", "Failed to send. Check your internet connection and try again." );
-	}
+			bool success = ( r.httpCode >= 200 && r.httpCode < 300 );
+
+			if ( success )
+			{
+				Q_strncpy( msg, "Bug report sent! Thank you.", sizeof( msg ) );
+
+				KeyValues *kv = new KeyValues( "SubmitDoneInfo" );
+				kv->SetString( "text", msg );
+				vgui::ivgui()->PostMessage( hSelf, kv, NULL );
+			}
+			else
+			{
+				char serverErr[256] = { 0 };
+				if ( !r.body.empty() && JsonExtractString( r.body.c_str(), "error", serverErr, sizeof( serverErr ) ) && serverErr[0] )
+				{
+					Q_snprintf( msg, sizeof( msg ), "%s", serverErr );
+				}
+				else if ( r.httpCode == 0 )
+				{
+					Q_strncpy( msg, "Couldn't reach the server. Check your internet connection.", sizeof( msg ) );
+				}
+				else if ( r.httpCode == 429 )
+				{
+					Q_strncpy( msg, "Too many reports. Please wait and try again.", sizeof( msg ) );
+				}
+				else if ( r.httpCode == 409 )
+				{
+					Q_strncpy( msg, "Duplicate report (already submitted recently).", sizeof( msg ) );
+				}
+				else if ( r.httpCode >= 500 )
+				{
+					Q_snprintf( msg, sizeof( msg ), "Server error (HTTP %d). Try again later.", r.httpCode );
+				}
+				else
+				{
+					Q_snprintf( msg, sizeof( msg ), "Failed to send (HTTP %d).", r.httpCode );
+				}
+
+				KeyValues *kv = new KeyValues( "SubmitDoneError" );
+				kv->SetString( "text", msg );
+				vgui::ivgui()->PostMessage( hSelf, kv, NULL );
+			}
+		} );
 }
 
 //---

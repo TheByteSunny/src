@@ -19,7 +19,7 @@
 #include "stb_image.h"
 
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
-#include "stb_image_resize.h"
+#include "stb_image_resize2.h"
 
 extern ConVar cl_sidespeed;
 extern ConVar cl_forwardspeed;
@@ -554,7 +554,17 @@ void CTouchControls::CreateAtlasTexture()
 				if (newW != w || newH != h)
 				{
 					unsigned char *resized = (unsigned char*)malloc(newW * newH * 4);
-					stbir_resize_uint8(img, w, h, 0, resized, newW, newH, 0, 4);
+					stbir_resize_uint8_linear(
+						img,
+						w,
+						h,
+						0,
+						resized,
+						newW,
+						newH,
+						0,
+						STBIR_RGBA
+					);
 					stbi_image_free(img);
 					img = resized;
 					t->isStbImage = false;

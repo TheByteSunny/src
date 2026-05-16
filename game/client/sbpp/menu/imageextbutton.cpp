@@ -14,6 +14,7 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "stb_image_resize2.h"
 
 std::unordered_map< std::string, TexInfo > ImageExtButton::s_textureCache;
 
@@ -57,82 +58,36 @@ ImageExtButton::~ImageExtButton()
 		ReleaseTextureByKey( m_mouseClickImagePath );
 }
 
-int ImageExtButton::NextPowerOfTwo( int value )
+int ImageExtButton::NearestPowerOfTwo( int value )
 {
-	if ( value <= 0 )
+	if ( value <= 1 )
 		return 1;
-	if ( ( value & ( value - 1 ) ) == 0 )
-		return value; // already power of 2
 
-	int power = 1;
-	while ( power < value )
-	{
-		power <<= 1;
-	}
-	return power;
+	int lower = 1;
+	while ( ( lower << 1 ) <= value )
+		lower <<= 1;
+
+	int upper = lower << 1;
+
+	if ( value * 2 <= lower * 3 )
+		return lower;
+
+	return upper;
 }
 
-unsigned char *ImageExtButton::ResizeImageToPowerOfTwo( unsigned char *originalData, int originalWidth, int originalHeight, int &newWidth, int &newHeight )
+unsigned char *ImageExtButton::ResizeImage( unsigned char *originalData, int originalWidth, int originalHeight, int &newWidth, int &newHeight )
 {
-	newWidth = NextPowerOfTwo( originalWidth );
-	newHeight = NextPowerOfTwo( originalHeight );
+	newWidth = NearestPowerOfTwo( originalWidth );
+	newHeight = NearestPowerOfTwo( originalHeight );
 
 	if ( newWidth == originalWidth && newHeight == originalHeight )
-	{
 		return originalData;
-	}
 
-	unsigned char *newData = (unsigned char *)malloc( newWidth * newHeight * 4 );
+	unsigned char *newData = (unsigned char *)malloc( (size_t)newWidth * newHeight * 4 );
 	if ( !newData )
 		return originalData;
 
-	const float xScale = (float)originalWidth / (float)newWidth;
-	const float yScale = (float)originalHeight / (float)newHeight;
-
-	for ( int y = 0; y < newHeight; ++y )
-	{
-		float srcY = ( y + 0.5f ) * yScale - 0.5f;
-		int y0 = floorf( srcY );
-		int y1 = y0 + 1;
-		float fy = srcY - (float)y0;
-
-		if ( y0 < 0 ) { y0 = 0; fy = srcY; }
-		if ( y1 < 0 ) y1 = 0;
-		if ( y0 >= originalHeight ) { y0 = originalHeight - 1; fy = 0.0f; }
-		if ( y1 >= originalHeight ) y1 = originalHeight - 1;
-
-		for ( int x = 0; x < newWidth; ++x )
-		{
-			float srcX = ( x + 0.5f ) * xScale - 0.5f;
-			int x0 = floorf( srcX );
-			int x1 = x0 + 1;
-			float fx = srcX - (float)x0;
-
-			if ( x0 < 0 ) { x0 = 0; fx = srcX; }
-			if ( x1 < 0 ) x1 = 0;
-			if ( x0 >= originalWidth ) { x0 = originalWidth - 1; fx = 0.0f; }
-			if ( x1 >= originalWidth ) x1 = originalWidth - 1;
-
-			unsigned char *p00 = &originalData[( y0 * originalWidth + x0 ) * 4];
-			unsigned char *p10 = &originalData[( y0 * originalWidth + x1 ) * 4];
-			unsigned char *p01 = &originalData[( y1 * originalWidth + x0 ) * 4];
-			unsigned char *p11 = &originalData[( y1 * originalWidth + x1 ) * 4];
-
-			for ( int c = 0; c < 4; ++c )
-			{
-				float i0 = p00[c] * (1.0f - fx) + p10[c] * fx;
-				float i1 = p01[c] * (1.0f - fx) + p11[c] * fx;
-
-				float val = i0 * (1.0f - fy) + i1 * fy;
-
-				int dstIdx = ( y * newWidth + x ) * 4 + c;
-				int iv = (int)( val + 0.5f );
-				if ( iv < 0 ) iv = 0;
-				if ( iv > 255 ) iv = 255;
-				newData[dstIdx] = (unsigned char)iv;
-			}
-		}
-	}
+	stbir_resize_uint8_linear( originalData, originalWidth, originalHeight, 0, newData, newWidth, newHeight, 0, STBIR_RGBA );
 
 	return newData;
 }
@@ -169,7 +124,7 @@ bool ImageExtButton::LoadImage( const char *filename, ImageData &imageData )
 	}
 
 	int			   textureWidth, textureHeight;
-	unsigned char *textureData = ResizeImageToPowerOfTwo( originalData, originalWidth, originalHeight, textureWidth, textureHeight );
+	unsigned char *textureData = ResizeImage( originalData, originalWidth, originalHeight, textureWidth, textureHeight );
 
 	bool needsFreeing = ( textureData != originalData );
 
@@ -188,6 +143,21 @@ bool ImageExtButton::LoadImage( const char *filename, ImageData &imageData )
 	stbi_image_free( originalData );
 
 	return imageData.isValid;
+}
+
+void ImageExtButton::SetImage( const char *normalImagePath )
+{
+	if ( !normalImagePath || !*normalImagePath )
+		return;
+
+	if ( m_normalImage.textureId != -1 && m_normalImagePath[0] )
+		ReleaseTextureByKey( m_normalImagePath );
+
+	m_normalImage = ImageData();
+	Q_strncpy( m_normalImagePath, normalImagePath, sizeof( m_normalImagePath ) );
+
+	LoadImage( m_normalImagePath, m_normalImage );
+	SetCurrentImage( &m_normalImage );
 }
 
 int ImageExtButton::CreateOrGetTextureFromImageData( const char *key, unsigned char *data, int width, int height )

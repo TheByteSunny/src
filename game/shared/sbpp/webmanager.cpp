@@ -7,6 +7,7 @@
 #include "cbase.h"
 #include "webmanager.h"
 #include "filesystem.h"
+#include <thread>
 
 CWebManager::CWebManager()
 {
@@ -48,6 +49,27 @@ size_t CWebManager::WriteMemoryCallback( void *contents, size_t size, size_t nme
 	}
 
 	return totalSize;
+}
+
+bool CWebManager::DownloadToFileAsync( const char *url, const char *localPath, WebDownloadCallback cb )
+{
+	if ( !url || !*url || !localPath || !*localPath )
+	{
+		if ( cb ) cb( false, localPath );
+		return false;
+	}
+
+	std::string urlStr  = url;
+	std::string pathStr = localPath;
+
+	std::thread( [ this, urlStr, pathStr, cb ]()
+	{
+		bool ok = DownloadToFile( urlStr, pathStr );
+		if ( cb )
+			cb( ok, pathStr.c_str() );
+	} ).detach();
+
+	return true;
 }
 
 size_t CWebManager::WriteFileCallback( void *contents, size_t size, size_t nmemb, void *userp )

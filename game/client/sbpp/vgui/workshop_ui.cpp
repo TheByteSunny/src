@@ -41,6 +41,8 @@ static int Scale( int value )
 	return vgui::scheme()->GetProportionalScaledValue( value );
 }
 
+DECLARE_BUILD_FACTORY( CBrowsePage );
+
 WorkshopClient::WorkshopClient( const char *downloadFolder ) : m_downloadFolder( downloadFolder )
 {
 	filesystem->CreateDirHierarchy( m_downloadFolder.String(), "MOD" );
@@ -204,7 +206,7 @@ bool WorkshopClient::ParseAddonsJSON( const char *jsonText, CUtlVector< Addon > 
 	return outAddons.Count() > 0;
 }
 
-void WorkshopClient::FetchThumbnails()
+void WorkshopClient::FetchThumbnails( ThumbnailReadyCallback perItemCb )
 {
 	char tempAbs[MAX_PATH];
 	tempAbs[0] = '\0';
@@ -255,21 +257,38 @@ void WorkshopClient::FetchThumbnails()
 		CUtlString relPath;
 		relPath.Format( "%s/%s", m_tempFolder.String(), filename );
 
+		if ( g_pFullFileSystem->FileExists( relPath.String(), "MOD" ) )
+		{
+			a.localThumbPath = relPath;
+			if ( perItemCb )
+				perItemCb( a.id, relPath );
+			continue;
+		}
+
 		char absPath[MAX_PATH];
 		V_snprintf( absPath, sizeof( absPath ), "%s%c%s", tempAbs, CORRECT_PATH_SEPARATOR, filename );
 
-		if ( !g_pFullFileSystem->FileExists( relPath.String(), "MOD" ) )
-		{
-			DevMsg( "Workshop: Downloading thumbnail %s -> %s\n", a.thumbnailUrl.String(), absPath );
+		CUtlString addonId = a.id;
+		CUtlString relPathCpy = relPath;
 
-			if ( !g_pWebManager->DownloadToFile( a.thumbnailUrl.String(), absPath ) )
+		g_pWebManager->DownloadToFileAsync( a.thumbnailUrl.String(), absPath,
+			[this, addonId, relPathCpy, perItemCb]( bool ok, const char * )
 			{
-				Warning( "Workshop: Failed to download thumbnail for %s\n", a.id.String() );
-				continue;
-			}
-		}
+				if ( !ok )
+					return;
 
-		a.localThumbPath = relPath;
+				for ( int k = 0; k < m_cachedAddons.Count(); ++k )
+				{
+					if ( !V_stricmp( m_cachedAddons[k].id.String(), addonId.String() ) )
+					{
+						m_cachedAddons[k].localThumbPath = relPathCpy;
+						break;
+					}
+				}
+
+				if ( perItemCb )
+					perItemCb( addonId, relPathCpy );
+			} );
 	}
 }
 
@@ -296,7 +315,7 @@ void WorkshopClient::FetchAddons( AddonListCallback cb )
 				return;
 			}
 
-			FetchThumbnails();
+			//FetchThumbnails();
 
 			if ( cb )
 				cb( true, m_cachedAddons );
@@ -474,11 +493,10 @@ CAddonThumbnailPanel::CAddonThumbnailPanel( Panel *parent, const char *panelName
 	m_pImageContainer->SetBounds( padding, padding, imageW, imageH );
 	m_pImageContainer->SetMouseInputEnabled( false );
 
-	ImageExtButton *imgBtn = new ImageExtButton( m_pImageContainer, "AddonImageBtn", thumbPath, nullptr, nullptr, nullptr );
-	imgBtn->SetBounds( 0, 0, imageW, imageH );
-	imgBtn->SetScaleImage( true );
-	imgBtn->SetMouseInputEnabled( false );
-	m_pImageButton = imgBtn;
+	m_pImageButton = new ImageExtButton( m_pImageContainer, "AddonImageBtn", thumbPath, nullptr, nullptr, nullptr );
+	m_pImageButton->SetBounds( 0, 0, imageW, imageH );
+	m_pImageButton->SetScaleImage( true );
+	m_pImageButton->SetMouseInputEnabled( false );
 
 	const int checkX = panelW - padding - checkboxSize;
 	const int checkY = panelH - padding - checkboxSize;
@@ -850,7 +868,34 @@ void CBrowsePage::PopulateGrid()
 	}
 
 	m_tileRects.RemoveAll();
+
 	InvalidateLayout( true, false );
+
+	VPANEL hSelf = GetVPanel();
+
+	pClient->FetchThumbnails(
+		[ hSelf ]( const CUtlString &id, const CUtlString &path )
+		{
+			KeyValues *kv = new KeyValues( "ThumbReady" );
+			kv->SetString( "id",   id.String() );
+			kv->SetString( "path", path.String() );
+			vgui::ivgui()->PostMessage( hSelf, kv, NULL );
+		} );
+}
+
+void CBrowsePage::OnThumbReady( KeyValues *kv )
+{
+	const char *id = kv->GetString( "id" );
+	const char *path = kv->GetString( "path" );
+
+	for ( int i = 0; i < m_AddonPanels.Count(); ++i )
+	{
+		if ( m_AddonPanels[i] && !V_stricmp( m_AddonPanels[i]->GetAddon().id.String(), id ) )
+		{
+			m_AddonPanels[i]->SetThumbnailPath( path );
+			break;
+		}
+	}
 }
 
 void CBrowsePage::ApplySubscriptionChanges()

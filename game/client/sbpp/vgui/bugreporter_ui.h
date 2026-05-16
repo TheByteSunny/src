@@ -38,6 +38,11 @@ private:
 	void ShowInfo( const char *title, const char *text );
 	void ShowError( const char *title, const char *text );
 
+	void OnSubmitResult( bool success, int statusCode, const char *errorMsg );
+
+	MESSAGE_FUNC_CHARPTR( OnSubmitDoneInfo,  "SubmitDoneInfo",  text );
+	MESSAGE_FUNC_CHARPTR( OnSubmitDoneError, "SubmitDoneError", text );
+
 	static const char *kBugReportUrl;
 
 	vgui::Label		*m_pLblName;

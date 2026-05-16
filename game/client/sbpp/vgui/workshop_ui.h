@@ -11,6 +11,7 @@
 
 #include "tier1/utlvector.h"
 #include "tier1/utlstring.h"
+#include "menu/imageextbutton.h"
 
 #include <vgui_controls/PropertyDialog.h>
 #include <vgui_controls/PropertyPage.h>
@@ -51,6 +52,7 @@ struct Addon
 
 typedef std::function< void( bool success, const CUtlVector< Addon > &addons ) > AddonListCallback;
 typedef std::function< void( bool success, const char *errorMsg ) >				 AddonActionCallback;
+typedef std::function< void( const CUtlString &id, const CUtlString &path ) >	 ThumbnailReadyCallback;
 
 class WorkshopClient
 {
@@ -75,9 +77,9 @@ public:
 		return m_downloadFolder.String();
 	}
 
-private:
+public:
 	bool ParseAddonsJSON( const char *jsonText, CUtlVector< Addon > &outAddons );
-	void FetchThumbnails();
+	void FetchThumbnails( ThumbnailReadyCallback perItemCb );
 
 	CUtlString			m_downloadFolder;
 	CUtlString			m_tempFolder;
@@ -118,6 +120,14 @@ public:
 		return m_addon;
 	}
 
+	void SetThumbnailPath( const char *path )
+	{
+		if ( !m_pImageButton )
+			return;
+
+		m_pImageButton->SetImage( path );
+	}
+
 	static void GetTileDimensions( int &outW, int &outH )
 	{
 		const int padding = 8;
@@ -140,11 +150,11 @@ private:
 	bool  m_bHovered;
 	bool  m_allowSubscribe;
 
-	Panel		*m_pImageContainer;
-	Panel		*m_pImageButton;
-	CheckButton *m_pCheckbox;
-	Label		*m_pNameLabel;
-	Label		*m_pSizeLabel;
+	Panel		   *m_pImageContainer;
+	ImageExtButton *m_pImageButton;
+	CheckButton	   *m_pCheckbox;
+	Label		   *m_pNameLabel;
+	Label		   *m_pSizeLabel;
 };
 
 class CBrowsePage : public PropertyPage
@@ -167,6 +177,7 @@ public:
 
 	MESSAGE_FUNC( OnRefreshClicked, "RefreshClicked" );
 	MESSAGE_FUNC_PARAMS( OnScrollBarMoved, "ScrollBarSliderMoved", pKV );
+	MESSAGE_FUNC_PARAMS( OnThumbReady, "ThumbReady", kv );
 
 private:
 	CUtlVector< CAddonThumbnailPanel * > m_AddonPanels;

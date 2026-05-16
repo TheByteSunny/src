@@ -58,8 +58,7 @@ public:
 		return m_command;
 	}
 
-	int			   NextPowerOfTwo( int value );
-	unsigned char *ResizeImageToPowerOfTwo( unsigned char *originalData, int originalWidth, int originalHeight, int &newWidth, int &newHeight );
+	unsigned char *ResizeImage( unsigned char *originalData, int originalWidth, int originalHeight, int &newWidth, int &newHeight );
 
 private:
 	ImageData m_normalImage;
@@ -88,6 +87,8 @@ private:
 
 	bool LoadImageIfNeeded( ImageData &imageData, const char *path, bool &flag );
 
+	int NearestPowerOfTwo( int value );
+
 public:
 	ImageExtButton( vgui::Panel *parent, const char *panelName, const char *normalImage, const char *mouseOverImage = NULL, const char *mouseClickImage = NULL, const char *pCmd = NULL );
 
@@ -104,18 +105,23 @@ public:
 	void SetMouseOverImage();
 	void SetMouseClickImage();
 
-    void SetScaleImage( bool b ) { m_bScaleImage = b; }
+	void SetImage( const char *normalImagePath );
 
-    ImageData *GetCurrentImage() const
-    {
-        return m_currentImage;
-    }
-    bool IsValid() const
-    {
-        return m_normalImage.isValid;
-    }
+	void SetScaleImage( bool b )
+	{
+		m_bScaleImage = b;
+	}
 
-    MESSAGE_FUNC_PARAMS( OnCommand, "Command", data );
+	ImageData *GetCurrentImage() const
+	{
+		return m_currentImage;
+	}
+	bool IsValid() const
+	{
+		return m_normalImage.isValid;
+	}
+
+	MESSAGE_FUNC_PARAMS( OnCommand, "Command", data );
 
 private:
 	static std::unordered_map< std::string, TexInfo > s_textureCache;

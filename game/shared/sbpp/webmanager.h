@@ -35,6 +35,7 @@ struct WebResult_t
 };
 
 typedef std::function< void( const WebResult_t & ) > RequestCallback;
+typedef std::function< void( bool success, const char *localPath ) > WebDownloadCallback;
 
 class CWebManager
 {
@@ -48,6 +49,8 @@ public:
 	bool Get( const std::string &url, RequestCallback callback );
 	bool Post( const std::string &url, const std::string &jsonBody, RequestCallback callback );
 	bool DownloadToFile( const std::string &url, const std::string &filePath );
+
+	bool DownloadToFileAsync( const char *url, const char *localPath, WebDownloadCallback cb );
 
 private:
 	static size_t WriteMemoryCallback( void *contents, size_t size, size_t nmemb, void *userp );
