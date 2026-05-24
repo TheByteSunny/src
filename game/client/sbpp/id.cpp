@@ -1,4 +1,4 @@
-//========== Copyright (C) 2026, Team HL2SB++, All rights reserved. ===========//
+//========== Copyright (C) 2026, The Aridity Team, All rights reserved. ===========//
 //
 // Purpose: User IDs
 //
