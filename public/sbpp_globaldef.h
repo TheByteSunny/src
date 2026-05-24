@@ -1,4 +1,4 @@
-//========== Copyright (C) 2025, Team HL2SB++, All rights reserved. ===========//
+//========== Copyright (C) 2026, The Aridity Team, All rights reserved. ===========//
 //
 // Purpose:
 //
@@ -9,6 +9,6 @@
 #pragma once
 #endif
 
-#define SBPP_VERSION "v1.1"
+#define SBPP_VERSION "v2026-06"
 
 #endif
