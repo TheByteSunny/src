@@ -1277,7 +1277,7 @@ void CHLClient::PostInit()
 	Msg(
 		"==========\n"
 		"Half-Life 2: Sandbox++\n"
-		"Created by The Aridity Team\n\n"
+		"Created by Team HL2SB++\n\n"
 		"User ID: %s\n"
 		"==========\n",
 
