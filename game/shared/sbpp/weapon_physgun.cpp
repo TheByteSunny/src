@@ -93,6 +93,7 @@ ConVar physgun_light( "physgun_light", "0", FCVAR_REPLICATED );
 ConVar physgun_vm_glow( "physgun_vm_glow", "1", FCVAR_USERINFO | FCVAR_ARCHIVE );
 
 ConVar physgun_rotation_speed( "physgun_rotation_speed", "5.0", FCVAR_USERINFO | FCVAR_ARCHIVE, "physgun rotation speed" );
+ConVar physgun_enable_ews( "physgun_enable_ews", "1", FCVAR_USERINFO | FCVAR_ARCHIVE, "enable the use(e)+w/s key..thingy" );
 
 static IPhysicsObject *GetPhysObjFromPhysicsBone( CBaseEntity *pEntity, short physicsbone )
 {
@@ -1129,6 +1130,14 @@ void CWeaponPhysicsGun::EffectUpdate( void )
 			}
 		}
 
+#ifdef CLIENT_DLL
+		if ( physgun_enable_ews.GetBool() )
+		{
+#else
+		int iValue = (int)atoi(engine->GetClientConVarValue(pOwner->GetClientIndex()+1, "physgun_enable_ews"));
+		if ( iValue == 1 )
+		{
+#endif
 		if ( m_useDown )
 		{
 #ifndef CLIENT_DLL
@@ -1163,6 +1172,7 @@ void CWeaponPhysicsGun::EffectUpdate( void )
 				gHUD.m_bSkipClear = false;
 			}
 #endif
+		}
 		}
 
 		IPhysicsObject *pPhys = GetPhysObjFromPhysicsBone( pObject, m_physicsBone );
